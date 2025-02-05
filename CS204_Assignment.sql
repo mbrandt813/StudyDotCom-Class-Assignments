@@ -529,3 +529,78 @@ INSERT INTO Borrower (BorrowID, ClientID, BookID, BorrowDate)
 (299, 26, 23, '2016-03-01'),
 (300, 49, 23, '2016-10-25')
 ;
+
+/*To display everything in the Clients table I will do a simple select all. */
+SELECT *
+FROM Client;
+
+/*First I'll select the clients first name and last name. Then to show their
+age i need to do some math. I will subtract the current year, 2025, from the
+year they were born, ClientDOB. This of course will not be thier exact age 
+on this very day since we do not know the month and day of thier date of birth. */
+SELECT 
+    cln.ClientFirstName 
+    ,cln.ClientLastName
+    ,(2025 - cln.ClientDOB) AS ClientAge
+    ,cln.Occupation
+FROM Client cln
+;
+
+/*To get clients who borrowed books in March 2019 I need to join the Clients table
+to the Borrower table. I will do this on the borrower tables foreign key ClientID
+To get the correct borrow date I will look for borrow dates with a year of 2018 
+and a month of 3. Alternatively  you could do brw.borrowDate >= '2018-03-01 AND 
+brw.borrowDate < '2018-04-01 */
+SELECT
+    cln.ClientFirstName
+    ,cln.ClientLastName
+FROM 
+    Client cln
+    INNER JOIN Borrower brw ON cln.ClientID = brw.ClientID
+WHERE 
+    YEAR(brw.BorrowDate) = 2018
+    AND MONTH(brw.BorrowDate) = 3
+;    
+
+
+/*To get the top 5 authors that clients borrow in 2017 I need to rank the authors
+by number of borrows. First I will limit the borrow dates to only ones that occured
+in 2017. Then I will group by authorID since that is more straight forward then both 
+the first and last name columns, where two authors could potentially have the same 
+last name. Then I will order by the amount of borrows that author had, in decending order
+so the most borrow are at the top of the list. Then I'll limit it to five results. */
+SELECT
+    ath.AuthorFirstName
+    ,ath.AuthorLastName
+FROM 
+    Borrower brw
+    LEFT JOIN Book bk ON brw.BookId = bk.BookId
+    LEFT JOIN Author ath ON bk.AuthorID = ath.AuthorID
+WHERE
+    YEAR(brw.BorrowDate) = 2017
+GROUP BY bk.AuthorID
+ORDER BY COUNT(brw.BorrowID) DESC
+LIMIT 5
+;
+
+
+/*To get the nationalities of the least five authors that clients borrowed from in
+2015 to 2017 I will use a similar query to my last. I will sort by the count of
+borrowed books in acsending order (the default) to find the least amount borrowed.
+I will also make my date range to include 2015 up to 2017, then I will just select
+nationality. The question did not specifiy that it wanted distinct nationalities, but
+just the nationalities of the least 5 authors, so there can be duplicate nationalities
+in the results. */
+SELECT
+    ath.AuthorNationality
+FROM 
+    Borrower brw
+    LEFT JOIN Book bk ON brw.BookId = bk.BookId
+    LEFT JOIN Author ath ON bk.AuthorID = ath.AuthorID
+WHERE
+    YEAR(brw.BorrowDate) >= 2015
+    AND YEAR(brw.BorrowDate) <= 2017
+GROUP BY bk.AuthorID
+ORDER BY COUNT(brw.BorrowID) 
+LIMIT 5
+;
