@@ -1,7 +1,7 @@
 /*First I need to create the actual database the table are going to go in. I'll name the library Baldwin Library*/
 CREATE DATABASE BaldwinLibrary;
 
-/*Nest I need to make sure I am using the new database I created, I'll switch over to it*/
+/*Next I need to make sure I am using the new database I created, I'll switch over to it*/
 USE BaldwinLibrary;
 
 /*Now I will create the tables. I'll start with the Author table. The AuthorID will be the Primary Key,
@@ -48,3 +48,22 @@ CREATE TABLE Client
      Occupation VARCHAR(200))
      ;
      
+/*Now that the tables are made I need to create the relationships between them. 
+AuthorID in the Book table is a foreign key to AuthorID in the Author table. One author can write many books.*/
+ALTER TABLE BOOK
+	ADD CONSTRAINT author_forkey FOREIGN KEY (AuthorId)
+    REFERENCES AUTHOR (AuthorID)
+    ;
+
+/*Next I will add a a forgeign key from the Borrower table, BookID, to the Book table, BookID*/
+ALTER TABLE Borrower 
+	ADD CONSTRAINT book_forkey FOREIGN KEY (BookID)
+    REFERENCES Book (BookID)
+    ;
+    
+/*Next there is another foreign key from the Borrower table, ClientID to the Client table, ClientID*/
+ALTER TABLE Borrower
+	ADD CONSTRAINT client_forkey FOREIGN KEY (ClientID)
+    REFERENCES Client (ClientID)
+    ;
+    
