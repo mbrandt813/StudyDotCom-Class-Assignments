@@ -604,3 +604,170 @@ GROUP BY bk.AuthorID
 ORDER BY COUNT(brw.BorrowID) 
 LIMIT 5
 ;
+
+/*To find the book that was the most borrowed in 2015 to 2017 I need to order by the count
+of books borrowed in descending order grouped by the book id. Then I need to limit my results 
+to one book*/
+SELECT
+    bk.BookTitle
+FROM 
+    Borrower brw
+    LEFT JOIN Book bk ON brw.BookId = bk.BookId
+WHERE
+    YEAR(brw.BorrowDate) >= 2015
+    AND YEAR(brw.BorrowDate) <= 2017
+GROUP BY bk.BookID
+ORDER BY COUNT(brw.BorrowID) DESC
+LIMIT 1
+;
+
+
+/*To find the top book genres that are borrowed by clients born from
+1970 to 1980 I need to limit my results to only borrows that were from
+a client born in the year range. Then I need to group by genre and get 
+a count of the borrows in each genre. The question did not specify how many genres 
+to include so I will list them all in order from most popular to least. */
+SELECT
+    bk.Genre
+FROM 
+    Borrower brw
+    LEFT JOIN Client cln ON brw.ClientID = cln.ClientID
+    LEFT JOIN Book bk ON brw.BookId = bk.BookId
+WHERE
+    cln.ClientDOB >= 1970
+    AND cln.ClientDOB <= 1980
+GROUP BY bk.Genre
+ORDER BY COUNT(brw.BorrowID) DESC
+;
+
+
+/*To find the top five occupations that borrowed the most in 2016 I will need
+to group by occupation, then order count of books borrowed per occupation in descending
+order to find the most. I will limit the borrow dates to only those in 2016 and limit to 5
+results.*/
+SELECT
+    cln.Occupation
+FROM 
+    Borrower brw
+    LEFT JOIN Client cln ON brw.ClientID = cln.ClientID
+WHERE
+    YEAR(brw.BorrowDate) = 2016
+GROUP BY cln.Occupation
+ORDER BY COUNT(brw.BorrowID) DESC
+LIMIT 5
+;
+
+/*To find the average number of books borrowed per a peson I am going to need a 
+subquery. First I need to find the number of books each person has borrowed, so 
+I will group by clientId and get the count of borrows. I included occupation here
+so I dont have to do another join to client in the main query. Now that I have the 
+number books each person has borrowed I can group by occupation and get an average
+of number of books. I rounded this to a whole number. No direction was given on 
+order so I did it from highest average to lowest.*/
+SELECT
+    BksPerPerson.Occupation AS Job_Title
+    ,ROUND(AVG(BksPerPerson.Num_Borrowed_Books), 0) AS Avg_Books_Borrowed
+FROM (
+      SELECT
+          cln.ClientID
+          ,cln.Occupation
+		  ,COUNT(brw.BorrowID) AS Num_Borrowed_Books
+      FROM 
+          Borrower brw
+          LEFT JOIN Client cln ON brw.ClientID = cln.ClientID
+      GROUP BY 
+          cln.ClientID,
+          cln.Occupation
+      ) BksPerPerson
+GROUP BY BksPerPerson.Occupation
+ORDER BY ROUND(AVG(BksPerPerson.Num_Borrowed_Books), 0) DESC
+;
+
+/*First I need to get the total number of clients that borrowed each book. To do that
+I will group by bookID and count the distinct number of clients that have borrowed it.
+Now I need to make sure the total number of clients that has borrowed each book is greater 
+than or equal to 20% of all clients. To do that I need to find out what 20% of clients is.
+I will count the amount of clientIds in the client table, and then times that by .20 to
+get to 20%. Then I will round to a whole number. Now to compare that number to the number of 
+clients that have borrowed each book I need to use a HAVING statment instead of a WHERE 
+statement because i am using a GROUP BY and the thing I am comparing against is a product 
+of the group by. */
+CREATE VIEW PopularBooks AS
+SELECT 
+    bk.BookTitle
+FROM Borrower brw
+LEFT JOIN Book bk ON brw.BookID = bk.BookID
+GROUP BY brw.BookID
+HAVING COUNT(DISTINCT brw.ClientID) >= (SELECT
+                                           ROUND((COUNT(cln.ClientID) *.2),0) AS TwentyPercentOfClients
+                                       FROM 
+                                           Client cln )
+;
+
+
+
+/*To find the month in 2017 with the most books borrowed I needed to group by the 
+month borrowed and get a count of borrowIDs - and limit to 2017. After doing this
+I saw that three months had the same top amount of borrows. To make sure I select
+all there I made my query into a CTE and then selected the max number of books from
+that table to limit the months that display. */
+WITH MaxBorrow AS
+    (SELECT 
+         MONTH(brw.BorrowDate) AS BorrowMonth
+	     ,COUNT(brw.BorrowID) AS TotalBooks
+	 FROM 
+         Borrower brw
+	 WHERE 
+         YEAR(brw.BorrowDate) = 2017
+	 GROUP BY MONTH(brw.BorrowDate))
+SELECT mxbr.BorrowMonth
+FROM MaxBorrow mxbr
+WHERE  mxbr.TotalBooks = (SELECT MAX(TotalBooks) FROM MaxBorrow)
+;
+
+/*To get average books per age I will make a query similar to average books
+per occupation, but switch out occupation for age plus do the age calculation. */
+SELECT
+    BksPerPerson.ClientAge
+    ,ROUND(AVG(BksPerPerson.Num_Borrowed_Books), 0) AS Avg_Books_Borrowed
+FROM (
+      SELECT
+          cln.ClientID
+          ,(2025 - cln.ClientDOB) AS ClientAge
+		  ,COUNT(brw.BorrowID) AS Num_Borrowed_Books
+      FROM 
+          Borrower brw
+          LEFT JOIN Client cln ON brw.ClientID = cln.ClientID
+      GROUP BY 
+          cln.ClientID
+          ,(2025 - cln.ClientDOB)
+      ) BksPerPerson
+GROUP BY BksPerPerson.ClientAge
+ORDER BY ROUND(AVG(BksPerPerson.Num_Borrowed_Books), 0) DESC
+;
+
+/*To find the youngest and older clients we need to find the min and max dates
+of birth in the Clients table. Because we only have the year they were born,
+there coul be multiple people that tie for oldest or youngest person. What
+columns to display were not specified so i listed all thier information*/
+SELECT 
+    *
+FROM 
+    Client cln
+WHERE  
+    cln.ClientDOB = (SELECT MIN(ClientDOB) FROM Client)
+    OR cln.ClientDOB = (SELECT MAX(ClientDOB) FROM Client)
+ORDER BY cln.ClientDOB DESC
+;
+
+/*To find authors that wrote books in multiple genres I need to count the distinct
+amount of genres each other has popped up in. In this case no authors have written
+books in different genres? */
+SELECT ath.AuthorFirstName
+       ,ath.AuthorLastName
+FROM 
+    Book bk
+    LEFT JOIN Author ath ON bk.AuthorID = ath.AuthorID
+GROUP BY ath.authorId
+HAVING COUNT(DISTINCT bk.genre) > 1
+;
