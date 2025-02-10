@@ -51,3 +51,57 @@ INSERT INTO users (name, username, address, city, state, zip)
 
 SELECT * FROM users
 ;
+
+/*Prompt 6*/
+SELECT COUNT(*) FROM users
+;
+
+/*Prompt 7*/
+ALTER TABLE photographs ADD COLUMN userid INT AFTER locationid
+;
+
+/*Prompt 8*/
+ALTER TABLE photographs MODIFY userid INT NOT NULL;
+
+/*Prompt 9*/
+INSERT INTO locations (type, description, lng, lat)
+    VALUES (1, 'Independence Hall', 794.35, 651.43),
+		   (2, '6709 Wonder Street', 323.41, 412.22),
+           (1, 'Sunrise', 221.45, 132.43),
+           (2, '356 A Street', 123.32, 222.43),
+           (1, 'Mountains', 34.12, 87.99),
+           (2, '900 Star Street', 1071.9, 206.45),
+           (1, 'Moonrise', 816.2, 111.2),
+           (2, '183714 N North Street', 176.11, 11.176)
+           ;
+           
+/*In the last query where I inserted data into the locations table
+itemid numbers were automatically created because I gave that column
+an auto_increment constraint. Since we entered 8 rows of data, there
+are itemids made from 1 to 8, I can use any of those for the locationid
+in the next insert statement */
+
+INSERT INTO photographs (photoid, locationid, userid)
+    VALUES (1, 4, 1),
+		   (2, 2, 1),
+           (3, 6, 3),
+           (4, 1, 4)
+           ;
+
+SELECT * FROM locations
+;
+
+SELECT * FROM photographs
+;
+
+/*Prompt 10*/
+SELECT name FROM users
+;
+
+/*Prompt 11*/
+SELECT name FROM USERS us, photographs pgh WHERE us.userid = pgh.userid
+;
+
+/*Prompt 12*/
+SELECT DISTINCT name FROM USERS us, photographs pgh WHERE us.userid = pgh.userid
+;
